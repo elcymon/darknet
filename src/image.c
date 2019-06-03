@@ -291,11 +291,12 @@ void draw_detections(image im, detection *dets, int num, float thresh, char **na
             if(bot > im.h-1) bot = im.h-1;
 
             draw_box_width(im, left, top, right, bot, width, red, green, blue);
-            if (alphabet) {
-                image label = get_label(alphabet, labelstr, (im.h*.03));
-                draw_label(im, top + width, left, label, rgb);
-                free_image(label);
-            }
+            //Uncomment and recompile to display annotation/label for detected objects
+            // if (alphabet) {
+            //     image label = get_label(alphabet, labelstr, (im.h*.03));
+            //     draw_label(im, top + width, left, label, rgb);
+            //     free_image(label);
+            // }
             if (dets[i].mask){
                 image mask = float_to_image(14, 14, 1, dets[i].mask);
                 image resized_mask = resize_image(mask, b.w*im.w, b.h*im.h);

@@ -25,3 +25,29 @@ ehthumbs.db
 Icon?
 Thumbs.db
 *.swp
+
+videos/
+backup/
+litter/
+.vscode/
+
+# YOLO weights
+*.weights
+
+# videos
+*.mp4
+*.MP4
+*.mkv
+*.avi
+
+# video singularity images
+*.simg
+
+
+*.zip
+*.*.e*
+*.*.o*
+*.a
+*.so
+*.list
+*.conv.*
