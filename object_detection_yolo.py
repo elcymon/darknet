@@ -9,7 +9,8 @@ import sys
 import numpy as np
 import os.path
 import time
-
+import os
+import ntpath
 
 parser = argparse.ArgumentParser(description='Object Detection using YOLO in OPENCV')
 parser.add_argument('--image', help='Path to image file.')
@@ -60,6 +61,17 @@ net = cv.dnn.readNetFromDarknet(modelConfiguration, modelWeights)
 net.setPreferableBackend(cv.dnn.DNN_BACKEND_OPENCV)
 net.setPreferableTarget(cv.dnn.DNN_TARGET_CPU)
 
+def saveDetections(filePath,frame,detections):
+    '''
+    Saves the detections of a specific frame in the desired filePath directory
+    detections is a list of class names and box lists
+    frame is the frame number in video or image name
+    '''
+
+    with open(filePath + '/{}.txt'.format(frame), 'w+') as f:
+        for i in detections:
+            f.write(i + '\n')
+
 # Get the names of the output layers
 def getOutputsNames(net):
     # Get the names of all the layers in the network
@@ -98,6 +110,7 @@ def postprocess(frame, outs):
     classIds = []
     confidences = []
     boxes = []
+    framesDetections = []
     for out in outs:
         for detection in out:
             scores = detection[5:]
@@ -132,7 +145,16 @@ def postprocess(frame, outs):
         top = box[1]
         width = box[2]
         height = box[3]
-        drawPred(classIds[i], confidences[i], left, top, left + width, top + height)
+        right = left + width
+        bottom = top + height
+
+        drawPred(classIds[i], confidences[i], left, top, right, bottom)
+        
+
+        frameDetection = '{} {} {} {} {}'.format('litter',left,top,right,bottom)
+        
+        framesDetections.append(frameDetection)
+    return framesDetections
 
 # Process inputs
 
@@ -153,23 +175,28 @@ elif (args.video):
         print("Input video file ", args.video, " doesn't exist")
         sys.exit(1)
     cap = cv.VideoCapture(args.video)
-    outputFile = "{}-{}-th{}-nms{}-iSz{}.avi".format(args.video[:-4],args.network,\
+    vidname = ntpath.basename(args.video)
+    outputFile = "{}-{}-th{}-nms{}-iSz{}".format(vidname[:-4],args.network,\
     (args.confThreshold).replace('.','p'),(args.nmsThreshold).replace('.','p'),\
         args.imgSize)
+    
+    vidDirName = os.path.dirname(args.video)
+    outputFolder = vidDirName + '/' + outputFile
+    os.mkdir(outputFolder)
 else:
     # Webcam input
     cap = cv.VideoCapture(0)
 
 # Get the video writer initialized to save the output video
 if (not args.image):
-    vid_writer = cv.VideoWriter(outputFile, cv.VideoWriter_fourcc('M','J','P','G'), round(cap.get(cv.CAP_PROP_FPS)),
+    vid_writer = cv.VideoWriter(outputFolder + '/' + outputFile + '.avi', cv.VideoWriter_fourcc('M','J','P','G'), round(cap.get(cv.CAP_PROP_FPS)),
      (round(cap.get(cv.CAP_PROP_FRAME_WIDTH)),round(cap.get(cv.CAP_PROP_FRAME_HEIGHT))))
 
 loopCount = 0
 nFrames = cap.get(cv.CAP_PROP_FRAME_COUNT)
 startT = time.time()
 
-with open(outputFile[:-4]+'.csv','w+') as logData:
+with open(outputFolder + '/' + outputFile + '.csv','w+') as logData:
     logData.write('Frame,Time,loopDuration,InferenceTime\n')
     while cv.waitKey(1) < 0:
         loopStart = time.time()
@@ -192,11 +219,16 @@ with open(outputFile[:-4]+'.csv','w+') as logData:
         # Sets the input to the network
         net.setInput(blob)
 
+        loopCount = loopCount + 1
         # Runs the forward pass to get output of the output layers
         outs = net.forward(getOutputsNames(net))
-
+        # print(outs)
+        # break
+        
         # Remove the bounding boxes with low confidence
-        postprocess(frame, outs)
+        frameOutput = postprocess(frame, outs)
+        
+        saveDetections(outputFolder,loopCount,frameOutput)
 
         # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
         t, _ = net.getPerfProfile()
@@ -209,10 +241,9 @@ with open(outputFile[:-4]+'.csv','w+') as logData:
             cv.imwrite(outputFile, frame.astype(np.uint8))
         else:
             vid_writer.write(frame.astype(np.uint8))
-        loopCount = loopCount + 1
         
         logInfo = "{},{:.4f},{:.4f},{:.4f}\n".format(loopCount, time.time() - startT, time.time() - loopStart, infTime)
         
-        # print(logInfo,end='')
+        print(logInfo,end='')
         logData.write(logInfo)
         # cv.imshow(winName, frame)
