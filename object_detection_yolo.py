@@ -83,9 +83,11 @@ def saveDetections(filePath,frameCount,detections,leftTop_rightBottom,frame):
             for i in detections:
                 # frameDetection = '%s %s %s %s %s %s' % ['litter',confidences[i],left,top,right,bottom]
                 # print(i)
-                frameDetection = '%s %s %s %s %s %s' % i
-                if (seg[0] <= i[2] and seg[1] <= i[3] and seg[2] > i[2] and seg[3] > i[3]) \
-                    or (seg[0] <= i[4] and seg[1] <= i[5] and seg[2] > i[4] and seg[3] > i[5]):
+                frameDetection = '%s %s %s %s %s' % i[0],[2],i[3],i[4],i[5]#'%s %s %s %s %s %s' % i
+                if seg[0] <= (i[2] + i[4]) / 2.0 and seg[1] <= (i[3] + i[5]) / 2.0 and \
+                    seg[2] > (i[2] + i[4]) / 2.0 and seg[3] > (i[3] + i[5]) / 2.0:
+                # if (seg[0] <= i[2] and seg[1] <= i[3] and seg[2] > i[2] and seg[3] > i[3]) \
+                #     or (seg[0] <= i[4] and seg[1] <= i[5] and seg[2] > i[4] and seg[3] > i[5]):
                     f.write(frameDetection + '\n')
                 # else:
                 #     f.write('')
