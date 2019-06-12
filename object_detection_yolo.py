@@ -83,7 +83,9 @@ def saveDetections(filePath,frameCount,detections,leftTop_rightBottom,frame):
             for i in detections:
                 # frameDetection = '%s %s %s %s %s %s' % ['litter',confidences[i],left,top,right,bottom]
                 # print(i)
-                frameDetection = '%s %s %s %s %s' % (i[0],i[2],i[3],i[4],i[5])#'%s %s %s %s %s %s' % i
+                frameDetection = '%s %s %s %s %s %s' % i
+                    #'%s %s %s %s %s' % (i[0],i[2],i[3],i[4],i[5])
+                        
                 if seg[0] <= (i[2] + i[4]) / 2.0 and seg[1] <= (i[3] + i[5]) / 2.0 and \
                     seg[2] > (i[2] + i[4]) / 2.0 and seg[3] > (i[3] + i[5]) / 2.0:
                 # if (seg[0] <= i[2] and seg[1] <= i[3] and seg[2] > i[2] and seg[3] > i[3]) \
@@ -180,8 +182,8 @@ def postprocess(frame, outs):
 # Process inputs
 
 # needed for displaying video in window
-winName = 'Deep learning object detection in OpenCV'
-cv.namedWindow(winName, cv.WINDOW_NORMAL)
+# winName = 'Deep learning object detection in OpenCV'
+# cv.namedWindow(winName, cv.WINDOW_NORMAL)
 
 if (args.image):
     # Open the image file
@@ -245,7 +247,8 @@ with open(outputFolder + '/' + outputFile + '.csv','w+') as logData:
         outs = net.forward(getOutputsNames(net))
         # print(outs)
         # break
-        frame = cv.resize(frame,(960,540),cv.INTER_LANCZOS4)
+        #resize frame to desired resolution
+        #frame = cv.resize(frame,(960,540),cv.INTER_LANCZOS4)
         if len(leftTop_rightBottom) == 0:
             #create a 4 boxes by 3 boxes segment of frame. i.e. 4 columns and 3 rows of boxes.
             fHeight = frame.shape[0]
@@ -285,4 +288,4 @@ with open(outputFolder + '/' + outputFile + '.csv','w+') as logData:
         
         print(logInfo,end='')
         logData.write(logInfo)
-        cv.imshow(winName, frame)
+        # cv.imshow(winName, frame)
