@@ -124,7 +124,7 @@ def drawPred(classId, conf, left, top, right, bottom):
 # Remove the bounding boxes with low confidence using non-maxima suppression
 def postprocess(frame, outs):
     frameHeight = frame.shape[0]
-    frameWidth = frame.shape[1]
+    frameWidth = frame.shape[1] 
 
     # Scan through all the bounding boxes output from the network and keep only the
     # ones with high confidence scores. Assign the box's class label as the class with the highest score.
@@ -180,8 +180,8 @@ def postprocess(frame, outs):
 # Process inputs
 
 # needed for displaying video in window
-# winName = 'Deep learning object detection in OpenCV'
-# cv.namedWindow(winName, cv.WINDOW_NORMAL)
+winName = 'Deep learning object detection in OpenCV'
+cv.namedWindow(winName, cv.WINDOW_NORMAL)
 
 if (args.image):
     # Open the image file
@@ -225,23 +225,6 @@ with open(outputFolder + '/' + outputFile + '.csv','w+') as logData:
         
         # get frame from the video
         hasFrame, frame = cap.read()
-        if len(leftTop_rightBottom) == 0:
-            #create a 4 boxes by 3 boxes segment of frame. i.e. 4 columns and 3 rows of boxes.
-            fHeight = frame.shape[0]
-            fWidth = frame.shape[1]
-            yPoints = np.linspace(start=0,stop=fHeight,num=4,dtype=np.int,endpoint=True)
-            xPoints = np.linspace(start=0,stop=fWidth,num=5,dtype=np.int,endpoint=True)
-
-            #create segments from frame
-            for y in range(len(yPoints) - 1):
-                for x in range(len(xPoints) - 1):
-                    leftTop_rightBottom.append((xPoints[x], yPoints[y], xPoints[x+1], yPoints[y+1]))
-                    segmentFolder = '{}_{}-{}_{}'.format(xPoints[x], yPoints[y], xPoints[x+1], yPoints[y+1])
-
-                    #create directory to store segment detections
-                    os.mkdir(outputFolder + '/' + segmentFolder)
-                    os.mkdir(outputFolder + '/' + segmentFolder + '/analysis')
-
         # Stop the program if reached end of video
         if not hasFrame:
             print("Done processing !!!")
@@ -262,6 +245,24 @@ with open(outputFolder + '/' + outputFile + '.csv','w+') as logData:
         outs = net.forward(getOutputsNames(net))
         # print(outs)
         # break
+        frame = cv.resize(frame,(960,540),cv.INTER_LANCZOS4)
+        if len(leftTop_rightBottom) == 0:
+            #create a 4 boxes by 3 boxes segment of frame. i.e. 4 columns and 3 rows of boxes.
+            fHeight = frame.shape[0]
+            fWidth = frame.shape[1]
+            yPoints = np.linspace(start=0,stop=fHeight,num=4,dtype=np.int,endpoint=True)
+            xPoints = np.linspace(start=0,stop=fWidth,num=5,dtype=np.int,endpoint=True)
+
+            #create segments from frame
+            for y in range(len(yPoints) - 1):
+                for x in range(len(xPoints) - 1):
+                    leftTop_rightBottom.append((xPoints[x], yPoints[y], xPoints[x+1], yPoints[y+1]))
+                    segmentFolder = '{}_{}-{}_{}'.format(xPoints[x], yPoints[y], xPoints[x+1], yPoints[y+1])
+
+                    #create directory to store segment detections
+                    os.mkdir(outputFolder + '/' + segmentFolder)
+                    os.mkdir(outputFolder + '/' + segmentFolder + '/analysis')
+
         
         # Remove the bounding boxes with low confidence
         frameOutput = postprocess(frame, outs)
@@ -284,4 +285,4 @@ with open(outputFolder + '/' + outputFile + '.csv','w+') as logData:
         
         print(logInfo,end='')
         logData.write(logInfo)
-        # cv.imshow(winName, frame)
+        cv.imshow(winName, frame)
