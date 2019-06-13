@@ -77,14 +77,14 @@ def saveDetections(filePath,frameCount,detections,leftTop_rightBottom,frame):
     for seg in leftTop_rightBottom:
         segmentFolder = '%s_%s-%s_%s' % seg
         #visualize the segments
-        cv.rectangle(frame, (seg[0],seg[1]), (seg[2],seg[3]), (255, 128, 0), 2)
+        cv.rectangle(frame, (seg[0],seg[1]), (seg[2],seg[3]), (0, 128, 255), 2)
 
         with open(filePath + '/' + segmentFolder + '/{}.txt'.format(frameCount), 'a+') as f:
             for i in detections:
                 # frameDetection = '%s %s %s %s %s %s' % ['litter',confidences[i],left,top,right,bottom]
                 # print(i)
                 frameDetection = '%s %s %s %s %s %s' % i
-                    #'%s %s %s %s %s' % (i[0],i[2],i[3],i[4],i[5])
+                    #'%s %s %s %s %s' % (i[0],i[2],i[3],i[4],i[5]) #
                         
                 if seg[0] <= (i[2] + i[4]) / 2.0 and seg[1] <= (i[3] + i[5]) / 2.0 and \
                     seg[2] > (i[2] + i[4]) / 2.0 and seg[3] > (i[3] + i[5]) / 2.0:
@@ -182,8 +182,8 @@ def postprocess(frame, outs):
 # Process inputs
 
 # needed for displaying video in window
-# winName = 'Deep learning object detection in OpenCV'
-# cv.namedWindow(winName, cv.WINDOW_NORMAL)
+winName = 'Deep learning object detection in OpenCV'
+cv.namedWindow(winName, cv.WINDOW_NORMAL)
 
 if (args.image):
     # Open the image file
@@ -248,13 +248,13 @@ with open(outputFolder + '/' + outputFile + '.csv','w+') as logData:
         # print(outs)
         # break
         #resize frame to desired resolution
-        #frame = cv.resize(frame,(960,540),cv.INTER_LANCZOS4)
+        # frame = cv.resize(frame,(960,540),cv.INTER_LANCZOS4)
         if len(leftTop_rightBottom) == 0:
             #create a 4 boxes by 3 boxes segment of frame. i.e. 4 columns and 3 rows of boxes.
             fHeight = frame.shape[0]
             fWidth = frame.shape[1]
-            yPoints = np.linspace(start=0,stop=fHeight,num=4,dtype=np.int,endpoint=True)
-            xPoints = np.linspace(start=0,stop=fWidth,num=5,dtype=np.int,endpoint=True)
+            yPoints = np.linspace(start=0,stop=fHeight,num=19,dtype=np.int,endpoint=True)
+            xPoints = np.linspace(start=0,stop=fWidth,num=33,dtype=np.int,endpoint=True)
 
             #create segments from frame
             for y in range(len(yPoints) - 1):
@@ -288,4 +288,4 @@ with open(outputFolder + '/' + outputFile + '.csv','w+') as logData:
         
         print(logInfo,end='')
         logData.write(logInfo)
-        # cv.imshow(winName, frame)
+        cv.imshow(winName, frame)
