@@ -134,6 +134,8 @@ def postprocess(frame, outs):
     confidences = []
     boxes = []
     framesDetections = []
+    detectorBox = []
+    networkCoords = []
     for out in outs:
         for detection in out:
             scores = detection[5:]
@@ -143,8 +145,9 @@ def postprocess(frame, outs):
             # classId = 0
             # confidence = scores[classId]
             if confidence > confThreshold:
-                center_x = int(detection[0] * frameWidth)
-                center_y = int(detection[1] * frameHeight)
+                shift = 1
+                center_x = int(detection[0] * frameWidth * shift)
+                center_y = int(detection[1] * frameHeight * shift)
                 width = int(detection[2] * frameWidth)
                 height = int(detection[3] * frameHeight)
                 left = int(center_x - width / 2)
@@ -152,6 +155,7 @@ def postprocess(frame, outs):
                 classIds.append(classId)
                 confidences.append(float(confidence))
                 boxes.append([left, top, width, height])
+                detectorBox.append([detection[0],detection[1],detection[2],detection[3]])
                 # print(detection)
                 # print(scores)
                 # input('>')
@@ -172,18 +176,18 @@ def postprocess(frame, outs):
         bottom = top + height
 
         drawPred(classIds[i], confidences[i], left, top, right, bottom)
-        
+        networkCoords.append(tuple(['litter',confidences[i]] + detectorBox[i]))
 
         # frameDetection = '%s %s %s %s %s %s' % ['litter',confidences[i],left,top,right,bottom]
         
         framesDetections.append(('litter',confidences[i],left,top,right,bottom))
-    return framesDetections
+    return framesDetections,networkCoords
 
 # Process inputs
 
 # needed for displaying video in window
-winName = 'Deep learning object detection in OpenCV'
-cv.namedWindow(winName, cv.WINDOW_NORMAL)
+#winName = 'Deep learning object detection in OpenCV'
+#cv.namedWindow(winName, cv.WINDOW_NORMAL)
 
 if (args.image):
     # Open the image file
@@ -191,7 +195,13 @@ if (args.image):
         print("Input image file ", args.image, " doesn't exist")
         sys.exit(1)
     cap = cv.VideoCapture(args.image)
-    outputFile = args.image[:-4]+'_yolo_out_py.jpg'
+    imgname = ntpath.basename(args.image)
+    outputFile = "{}-{}-th{}-nms{}-iSz{}".format(imgname[:-4],args.network,\
+    (args.confThreshold).replace('.','p'),(args.nmsThreshold).replace('.','p'),\
+        args.imgSize)
+    imgDirName = os.path.dirname(args.image)
+    outputFolder = imgDirName + '/' + outputFile
+    os.makedirs(outputFolder, exist_ok=True)
 elif (args.video):
     # Open the video file
     if not os.path.isfile(args.video):
@@ -205,7 +215,7 @@ elif (args.video):
     
     vidDirName = os.path.dirname(args.video)
     outputFolder = vidDirName + '/' + outputFile
-    os.mkdir(outputFolder)
+    os.makedirs(outputFolder, exist_ok=True)
 else:
     # Webcam input
     cap = cv.VideoCapture(0)
@@ -253,8 +263,8 @@ with open(outputFolder + '/' + outputFile + '.csv','w+') as logData:
             #create a 4 boxes by 3 boxes segment of frame. i.e. 4 columns and 3 rows of boxes.
             fHeight = frame.shape[0]
             fWidth = frame.shape[1]
-            yPoints = np.linspace(start=0,stop=fHeight,num=19,dtype=np.int,endpoint=True)
-            xPoints = np.linspace(start=0,stop=fWidth,num=33,dtype=np.int,endpoint=True)
+            yPoints = np.linspace(start=0,stop=fHeight,num=4,dtype=np.int,endpoint=True)
+            xPoints = np.linspace(start=0,stop=fWidth,num=5,dtype=np.int,endpoint=True)
 
             #create segments from frame
             for y in range(len(yPoints) - 1):
@@ -263,29 +273,31 @@ with open(outputFolder + '/' + outputFile + '.csv','w+') as logData:
                     segmentFolder = '{}_{}-{}_{}'.format(xPoints[x], yPoints[y], xPoints[x+1], yPoints[y+1])
 
                     #create directory to store segment detections
-                    os.mkdir(outputFolder + '/' + segmentFolder)
-                    os.mkdir(outputFolder + '/' + segmentFolder + '/analysis')
+                    # os.makedirs(outputFolder + '/' + segmentFolder, exist_ok=True)
+                    os.makedirs(outputFolder + '/' + segmentFolder + '/analysis',exist_ok=True)
 
         
         # Remove the bounding boxes with low confidence
-        frameOutput = postprocess(frame, outs)
+        frameOutput,networkCoords = postprocess(frame, outs)
         
         saveDetections(outputFolder,loopCount,frameOutput,leftTop_rightBottom,frame)
-
+        saveDetections(outputFolder,'ntwk-{}'.format(loopCount),networkCoords,leftTop_rightBottom,frame)
         # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
         t, _ = net.getPerfProfile()
         infTime = t * 1000.0 / cv.getTickFrequency()
-        label = 'Inference time: %.2f ms' % (infTime)
+        label = '%d Inference time: %.2f ms' % (loopCount,infTime)
         cv.putText(frame, label, (0, 15), cv.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
 
         # Write the frame with the detection boxes
         if (args.image):
-            cv.imwrite(outputFile, frame.astype(np.uint8))
+            cv.imwrite(outputFolder + '/' + outputFile + '.jpg', frame.astype(np.uint8))
         else:
             vid_writer.write(frame.astype(np.uint8))
+            # cv.imwrite(outputFolder + '/' + outputFile +'-' + str(loopCount) + '.jpg', frame.astype(np.uint8))
         
         logInfo = "{},{:.4f},{:.4f},{:.4f}\n".format(loopCount, time.time() - startT, time.time() - loopStart, infTime)
         
         print(logInfo,end='')
         logData.write(logInfo)
-        cv.imshow(winName, frame)
+#        cv.imshow(winName, frame)
+#        cv.waitKey()
